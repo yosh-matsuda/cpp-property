@@ -114,6 +114,13 @@ namespace cpp_property
                     return derived().get();
                 }
 
+                // indirection operator
+                decltype(auto) operator*() const
+                requires has_getter && requires(ReturnType v) { *v; }
+                {
+                    return *derived().get();
+                }
+
                 // equal operator (default)
                 template <typename U>  // clang-format off
                 requires has_setter
@@ -133,73 +140,114 @@ namespace cpp_property
                 }
 
 #pragma region lvalue operators
-                decltype(auto) operator[](std::size_t i) const& { return derived()()[i]; }
+                template <typename S>  // clang-format off
+                requires has_getter && requires(ReturnType v, S&& i) { v[std::forward<S>(i)]; }
+                decltype(auto) operator[](S&& i) const&  // clang-format on
+                {
+                    return derived()()[std::forward<S>(i)];
+                }
                 auto operator++(int) const&
+                requires has_getter && has_setter && requires(ReturnType v) { v + 1; }
                 {
                     const auto prev = derived()();
                     operator=(prev + 1);
                     return prev;
                 }
                 auto operator--(int) const&
+                requires has_getter && has_setter && requires(ReturnType v) { v - 1; }
                 {
                     const auto prev = derived()();
                     operator=(prev - 1);
                     return prev;
                 }
-                decltype(auto) operator++() const& { return operator=(derived()() + 1); }
-                decltype(auto) operator--() const& { return operator=(derived()() - 1); }
-                decltype(auto) operator~() const& { return ~derived()(); }
-                decltype(auto) operator!() const& { return !derived()(); }
-                decltype(auto) operator-() const& { return -derived()(); }
-                decltype(auto) operator+() const& { return +derived()(); }
+                decltype(auto) operator++() const&
+                requires has_getter && has_setter && requires(ReturnType v) { v + 1; }
+                {
+                    return operator=(derived()() + 1);
+                }
+                decltype(auto) operator--() const&
+                requires has_getter && has_setter && requires(ReturnType v) { v - 1; }
+                {
+                    return operator=(derived()() - 1);
+                }
+                decltype(auto) operator~() const&
+                requires has_getter && requires(ReturnType v) { ~v; }
+                {
+                    return ~derived()();
+                }
+                decltype(auto) operator!() const&
+                requires has_getter && requires(ReturnType v) { !v; }
+                {
+                    return !derived()();
+                }
+                decltype(auto) operator-() const&
+                requires has_getter && requires(ReturnType v) { -v; }
+                {
+                    return -derived()();
+                }
+                decltype(auto) operator+() const&
+                requires has_getter && requires(ReturnType v) { +v; }
+                {
+                    return +derived()();
+                }
 
-                template <typename U>
-                decltype(auto) operator*=(const U& right) const&
+                template <typename U>  // clang-format off
+                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v * r; }
+                decltype(auto) operator*=(const U& right) const&  // clang-format on
                 {
                     return operator=(derived()() * right);
                 }
-                template <typename U>
-                decltype(auto) operator/=(const U& right) const&
+                template <typename U>  // clang-format off
+                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v / r; }
+                decltype(auto) operator/=(const U& right) const&  // clang-format on
                 {
                     return operator=(derived()() / right);
                 }
-                template <typename U>
-                decltype(auto) operator%=(const U& right) const&
+                template <typename U>  // clang-format off
+                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v % r; }
+                decltype(auto) operator%=(const U& right) const&  // clang-format on
                 {
                     return operator=(derived()() % right);
                 }
-                template <typename U>
-                decltype(auto) operator+=(const U& right) const&
+                template <typename U>  // clang-format off
+                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v + r; }
+                decltype(auto) operator+=(const U& right) const&  // clang-format on
                 {
                     return operator=(derived()() + right);
                 }
-                template <typename U>
-                decltype(auto) operator-=(const U& right) const&
+                template <typename U>  // clang-format off
+                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v - r; }
+                decltype(auto) operator-=(const U& right) const&  // clang-format on
                 {
                     return operator=(derived()() - right);
                 }
-                template <typename U>
-                decltype(auto) operator<<=(const U& right) const&
+                template <typename U>  // clang-format off
+                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v << r; }
+                decltype(auto) operator<<=(const U& right) const&  // clang-format on
                 {
                     return operator=(derived()() << right);
                 }
-                template <typename U>
-                decltype(auto) operator>>=(const U& right) const&
+                template <typename U>  // clang-format off
+                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v + r; }
+                decltype(auto) operator>>=(const U& right) const&  // clang-format on
                 {
                     return operator=(derived()() >> right);
                 }
-                template <typename U>
-                decltype(auto) operator&=(const U& right) const&
+                template <typename U>  // clang-format off
+                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v & r; }
+                decltype(auto) operator&=(const U& right) const&  // clang-format on
                 {
                     return operator=(derived()() & right);
                 }
-                template <typename U>
-                decltype(auto) operator|=(const U& right) const&
+                template <typename U>  // clang-format off
+                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v | r; }
+                decltype(auto) operator|=(const U& right) const&  // clang-format on
                 {
                     return operator=(derived()() | right);
                 }
-                template <typename U>
-                decltype(auto) operator^=(const U& right) const&
+                template <typename U>  // clang-format off
+                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v ^ r; }
+                decltype(auto) operator^=(const U& right) const&  // clang-format on
                 {
                     return operator=(derived()() ^ right);
                 }
@@ -207,277 +255,331 @@ namespace cpp_property
             };
 
 #pragma region global operators(property / not property)
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator*(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() * std::forward<U>(r); }
+            decltype(auto) operator*(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() * std::forward<U>(t2);
             }
 
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator/(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() / std::forward<U>(r); }
+            decltype(auto) operator/(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() / std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator%(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() % std::forward<U>(r); }
+            decltype(auto) operator%(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() % std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator+(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() + std::forward<U>(r); }
+            decltype(auto) operator+(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() + std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator-(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() - std::forward<U>(r); }
+            decltype(auto) operator-(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() - std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator<<(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() << std::forward<U>(r); }
+            decltype(auto) operator<<(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() << std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator>>(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() >> std::forward<U>(r); }
+            decltype(auto) operator>>(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() >> std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator<(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() < std::forward<U>(r); }
+            decltype(auto) operator<(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() < std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator>(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() > std::forward<U>(r); }
+            decltype(auto) operator>(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() > std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator<=(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() <= std::forward<U>(r); }
+            decltype(auto) operator<=(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() <= std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator>=(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() >= std::forward<U>(r); }
+            decltype(auto) operator>=(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() >= std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator==(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() == std::forward<U>(r); }
+            decltype(auto) operator==(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() == std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator!=(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() != std::forward<U>(r); }
+            decltype(auto) operator!=(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() != std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator&(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() & std::forward<U>(r); }
+            decltype(auto) operator&(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() & std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator^(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() ^ std::forward<U>(r); }
+            decltype(auto) operator^(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() ^ std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator|(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() | std::forward<U>(r); }
+            decltype(auto) operator|(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() | std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator&&(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() && std::forward<U>(r); }
+            decltype(auto) operator&&(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() && std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator||(const V& t1, U&& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const V& v, U&& r) { v() || std::forward<U>(r); }
+            decltype(auto) operator||(const V& t1, U&& t2)  // clang-format on
             {
                 return t1() || std::forward<U>(t2);
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator*(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) * v(); }
+            decltype(auto) operator*(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) * t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator/(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) / v(); }
+            decltype(auto) operator/(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) / t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator%(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) % v(); }
+            decltype(auto) operator%(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) % t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator+(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) + v(); }
+            decltype(auto) operator+(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) + t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator-(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) - v(); }
+            decltype(auto) operator-(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) - t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator<<(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) << v(); }
+            decltype(auto) operator<<(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) << t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator>>(U&& t1, const V& right)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) >> v(); }
+            decltype(auto) operator>>(U&& t1, const V& t2)  // clang-format on
             {
-                return std::forward<U>(t1) << right();
+                return std::forward<U>(t1) >> t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator<(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) < v(); }
+            decltype(auto) operator<(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) < t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator>(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) > v(); }
+            decltype(auto) operator>(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) > t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator<=(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) <= v(); }
+            decltype(auto) operator<=(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) <= t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator>=(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) >= v(); }
+            decltype(auto) operator>=(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) >= t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator==(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) == v(); }
+            decltype(auto) operator==(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) == t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator!=(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) != v(); }
+            decltype(auto) operator!=(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) != t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator&(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) & v(); }
+            decltype(auto) operator&(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) & t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator^(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) ^ v(); }
+            decltype(auto) operator^(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) ^ t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator|(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) | v(); }
+            decltype(auto) operator|(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) | t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator&&(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) && v(); }
+            decltype(auto) operator&&(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) && t2();
             }
-            template <not_base_of_property U, base_of_property V>
-            decltype(auto) operator||(U&& t1, const V& t2)
+            template <not_base_of_property U, base_of_property V>  // clang-format off
+            requires requires(U&& r, const V& v) { std::forward<U>(r) || v(); }
+            decltype(auto) operator||(U&& t1, const V& t2)  // clang-format on
             {
                 return std::forward<U>(t1) || t2();
             }
 #pragma endregion operators(property / not property)
 
 #pragma region global operators(property / property)
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator*(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() * v(); }
+            decltype(auto) operator*(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() * t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator/(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() / v(); }
+            decltype(auto) operator/(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() / t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator%(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() % v(); }
+            decltype(auto) operator%(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() % t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator+(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() + v(); }
+            decltype(auto) operator+(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() + t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator-(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() - v(); }
+            decltype(auto) operator-(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() - t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator<<(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() << v(); }
+            decltype(auto) operator<<(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() << t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator>>(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() >> v(); }
+            decltype(auto) operator>>(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() >> t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator<(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() < v(); }
+            decltype(auto) operator<(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() < t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator>(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() > v(); }
+            decltype(auto) operator>(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() > t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator<=(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() <= v(); }
+            decltype(auto) operator<=(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() <= t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator>=(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() >= v(); }
+            decltype(auto) operator>=(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() >= t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator==(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() == v(); }
+            decltype(auto) operator==(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() == t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator!=(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+             requires requires(const U& u, const V& v) { u() != v(); }
+            decltype(auto) operator!=(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() != t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator&(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() & v(); }
+            decltype(auto) operator&(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() & t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator^(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() ^ v(); }
+            decltype(auto) operator^(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() ^ t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator|(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() | v(); }
+            decltype(auto) operator|(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() | t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator&&(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() && v(); }
+            decltype(auto) operator&&(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() && t2();
             }
-            template <base_of_property U, base_of_property V>
-            decltype(auto) operator||(const U& t1, const V& t2)
+            template <base_of_property U, base_of_property V>  // clang-format off
+            requires requires(const U& u, const V& v) { u() || v(); }
+            decltype(auto) operator||(const U& t1, const V& t2)  // clang-format on
             {
                 return t1() || t2();
             }
