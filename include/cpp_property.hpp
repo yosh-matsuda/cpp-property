@@ -702,13 +702,16 @@ namespace cpp_property
 
         // assign operator
         template <detail::base_of_property PropertyType>  // clang-format off
-        requires requires (const PropertyType p) { p(); }
+        requires requires (const decltype(setter_)& s, const PropertyType p) { s(p()); } &&
+                 requires (const decltype(auto_setter_)& s, const PropertyType p) { s.set(p()); }
         decltype(auto) operator=(const PropertyType& prop) const  // clang-format on
         {
             return Base::operator=(prop());
         };
-        template <detail::not_base_of_property U>
-        decltype(auto) operator=(U&& value) const
+        template <detail::not_base_of_property U>  // clang-format off
+        requires requires(const decltype(setter_)& s, U&& v) { s(std::forward<U>(v)); } &&
+                 requires(const decltype(auto_setter_)& s, U&& v) { s.set(std::forward<U>(v)); }
+        decltype(auto) operator=(U&& value) const  // clang-format on
         {
             return Base::operator=(std::forward<U>(value));
         };
@@ -795,13 +798,16 @@ namespace cpp_property
 
         // assign operator
         template <detail::base_of_property PropertyType>  // clang-format off
-        requires requires (const PropertyType p) { p(); }
+        requires requires (const decltype(setter_)& s, const PropertyType p) { s(p()); } &&
+                 requires (const decltype(auto_setter_)& s, const PropertyType p) { s.set(p()); }
         decltype(auto) operator=(const PropertyType& prop) const  // clang-format on
         {
             return Base::operator=(prop());
         };
-        template <detail::not_base_of_property U>
-        decltype(auto) operator=(U&& value) const
+        template <detail::not_base_of_property U>  // clang-format off
+        requires requires(const decltype(setter_)& s, U&& v) { s(std::forward<U>(v)); } &&
+                 requires(const decltype(auto_setter_)& s, U&& v) { s.set(std::forward<U>(v)); }
+        decltype(auto) operator=(U&& value) const  // clang-format on
         {
             return Base::operator=(std::forward<U>(value));
         };
@@ -906,13 +912,16 @@ namespace cpp_property
 
         // assign operator
         template <detail::base_of_property PropertyType>  // clang-format off
-        requires requires (const PropertyType p) { p(); }
+        requires requires (const decltype(setter_)& s, const PropertyType p) { s(p()); } &&
+                 requires (const decltype(auto_setter_)& s, const PropertyType p) { s.set(p()); }
         decltype(auto) operator=(const PropertyType& prop) const  // clang-format on
         {
             return Base::operator=(prop());
         };
-        template <detail::not_base_of_property U>
-        decltype(auto) operator=(U&& value) const
+        template <detail::not_base_of_property U>  // clang-format off
+        requires requires(const decltype(setter_)& s, U&& v) { s(std::forward<U>(v)); } &&
+                 requires(const decltype(auto_setter_)& s, U&& v) { s.set(std::forward<U>(v)); }
+        decltype(auto) operator=(U&& value) const  // clang-format on
         {
             return Base::operator=(std::forward<U>(value));
         };
@@ -997,13 +1006,14 @@ namespace cpp_property
 
         // assign operator
         template <detail::base_of_property PropertyType>  // clang-format off
-        requires requires (const PropertyType p) { p(); }
+        requires requires (EntityType& e, const PropertyType p) { e = p(); }
         decltype(auto) operator=(const PropertyType& prop)  // clang-format on
         {
             return Base::operator=(prop());
         };
         template <detail::not_base_of_property U>  // clang-format off
-        requires(!std::is_reference_v<EntityType> || !std::is_rvalue_reference_v<U&&>)
+        requires requires (EntityType& e, U&& v) { e = std::forward<U>(v); } &&
+                 (!std::is_reference_v<EntityType> || !std::is_rvalue_reference_v<U&&>)
         decltype(auto) operator=(U&& value)  // clang-format on
         {
             return Base::operator=(std::forward<U>(value));
@@ -1112,12 +1122,13 @@ namespace cpp_property
 
         // assign operator
         template <detail::base_of_property PropertyType>  // clang-format off
-        requires requires (const PropertyType p) { p(); }
+        requires requires (EntityType& e, const PropertyType p) { e = p(); }
         decltype(auto) operator=(const PropertyType& prop)  // clang-format on
         {
             return Base::operator=(prop());
         };
         template <detail::not_base_of_property U>  // clang-format off
+        requires requires (EntityType& e, U&& v) { e = std::forward<U>(v); }
         decltype(auto) operator=(U&& value)  // clang-format on
         {
             return Base::operator=(std::forward<U>(value));
