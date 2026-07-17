@@ -5,7 +5,7 @@ C#-like property for C++20.
 ## Features
 
 *   C# like syntax.
-*   Minimum overhead.
+*   Minimum overhead with auto-implemented accessors.
 *   Operator overloadings for transparent accesses.
 *   Compile-time checks for dangling reference.
 
@@ -68,7 +68,7 @@ class A
     double num_ = 0;
 
 public:
-    // auto-impelemented getter
+    // auto-implemented getter
     property<const double&> num_auto_get
     {
         get_auto { num_ },
@@ -79,7 +79,7 @@ public:
         }
     };
 
-    // auto-impelemented setter
+    // auto-implemented setter
     property<const double&> num_auto_set
     {
         get_cref
@@ -89,7 +89,7 @@ public:
         set_auto { num_ }
     };
 
-    // auto-impelemented getter and setter
+    // auto-implemented getter and setter
     property<const double&> num_auto_both
     {
         get_auto { num_ },
@@ -156,9 +156,15 @@ public:
 
     // get/set-only auto-implemented property
     auto_property<const double&, get_only> num_get_only { get, num_ };
-    auto_property<double&, set_only> num_get_only { set, num_ };
+    auto_property<double&, set_only> num_set_only { set, num_ };
 };
 ```
+
+## Notes
+
+Properties backed by function accessors use `std::function`. Use `get_auto`, `set_auto`, or `auto_property` when the getter or setter can directly access a backing field and the lowest overhead is important.
+
+Logical operators are overloaded for transparent access, but overloaded `operator&&` and `operator||` do not preserve the built-in short-circuit evaluation rules.
 
 <!---
 ## Getting Started
