@@ -224,7 +224,7 @@ namespace cpp_property
                     return operator=(derived()() << right);
                 }
                 template <typename U>
-                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v + r; }
+                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v >> r; }
                 decltype(auto) operator>>=(const U& right) const&
                 {
                     return operator=(derived()() >> right);
@@ -1078,17 +1078,13 @@ namespace cpp_property
     template <typename EntityType>
     requires std::is_lvalue_reference_v<EntityType>
     class auto_property<EntityType, set_only>
-        : public detail::property_base<auto_property<EntityType, set_only>, const std::remove_cvref_t<EntityType>&,
-                                       std::remove_cvref_t<EntityType>>
+        : public detail::property_base<auto_property<EntityType, set_only>, void, std::remove_cvref_t<EntityType>>
     {
-        using Base = detail::property_base<auto_property<EntityType, set_only>, const std::remove_cvref_t<EntityType>&,
-                                           std::remove_cvref_t<EntityType>>;
+        using Base = detail::property_base<auto_property<EntityType, set_only>, void, std::remove_cvref_t<EntityType>>;
         friend Base;
 
         template <typename...>
         friend class property;
-
-        using ReturnType = const std::remove_cvref_t<EntityType>&;
         EntityType entity_;
 
     public:

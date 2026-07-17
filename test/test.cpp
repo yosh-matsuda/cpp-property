@@ -107,6 +107,8 @@ TEST(CppProperty, AssignOperator)
     static_assert(std::is_assignable_v<property<const double&, double>, double>);
     static_assert(!std::is_assignable_v<property<const double&, get_only>, double>);
     static_assert(std::is_assignable_v<property<const double&, set_only>, double>);
+
+    static_assert(!std::is_convertible_v<auto_property<double&, set_only>, const double&>);
 }
 
 TEST(CppProperty, Cast)
@@ -139,6 +141,10 @@ TEST(CppProperty, Operators)
 {
     constexpr auto VALUE = 3.0;
     auto real = 1.0;
+    auto other = 2.0;
+    auto bits = 0b1000;
+    auto other_bits = 0b0010;
+    auto flag = false;
     struct
     {
         int num = 2;
@@ -147,6 +153,14 @@ TEST(CppProperty, Operators)
 
     auto p_real = property{[&real]() -> const decltype(real)& { return real; },
                            [&real](const decltype(real)& value) { real = value; }};
+    auto p_other = property{[&other]() -> const decltype(other)& { return other; },
+                            [&other](const decltype(other)& value) { other = value; }};
+    auto p_bits = property{[&bits]() -> const decltype(bits)& { return bits; },
+                           [&bits](const decltype(bits)& value) { bits = value; }};
+    auto p_other_bits = property{[&other_bits]() -> const decltype(other_bits)& { return other_bits; },
+                                 [&other_bits](const decltype(other_bits)& value) { other_bits = value; }};
+    auto p_flag = property{[&flag]() -> const decltype(flag)& { return flag; },
+                           [&flag](const decltype(flag)& value) { flag = value; }};
     auto p_obj =
         property{[&obj]() -> const decltype(obj)& { return obj; }, [&obj](const decltype(obj)& value) { obj = value; }};
     auto p_objp = property{[&obj]() -> const decltype(obj)* { return &obj; }};
@@ -157,7 +171,6 @@ TEST(CppProperty, Operators)
     EXPECT_EQ(obj.num, p_objp->num);
     EXPECT_EQ(obj.num, p_opt->num);
 
-    // TODO: operators leftover
     EXPECT_EQ(real + VALUE, p_real + VALUE);
     EXPECT_EQ(VALUE + real, VALUE + p_real);
     EXPECT_EQ(real - VALUE, p_real - VALUE);
@@ -166,10 +179,21 @@ TEST(CppProperty, Operators)
     EXPECT_EQ(VALUE * real, VALUE * p_real);
     EXPECT_EQ(real / VALUE, p_real / VALUE);
     EXPECT_EQ(VALUE / real, VALUE / p_real);
+    EXPECT_EQ(real + other, p_real + p_other);
+    EXPECT_TRUE(p_real < VALUE);
+    EXPECT_TRUE(VALUE > p_real);
+    EXPECT_TRUE(p_bits != p_other_bits);
+    EXPECT_FALSE(p_flag && true);
+    EXPECT_TRUE(p_flag || true);
+    EXPECT_EQ(bits << 1, p_bits << 1);
 
     auto result = real + VALUE;
     p_real += VALUE;
     EXPECT_EQ(result, real);
     EXPECT_EQ(result, p_real);
+
+    p_bits <<= 1;
+    p_bits >>= 2;
+    EXPECT_EQ(0b0100, bits);
 }
 // NOLINTEND
