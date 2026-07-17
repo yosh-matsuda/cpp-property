@@ -34,22 +34,28 @@ if(NOT MSVC)
     string(REPLACE "-O2" "-O3" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
 endif()
 
-# GTest
-find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRS})
+if(CPPPROPERTY_BUILD_TEST)
+    # GTest
+    find_package(GTest REQUIRED)
+    include_directories(${GTEST_INCLUDE_DIRS})
 
-# Google benchmark
-find_package(benchmark REQUIRED)
+    # executables
+    add_executable("${PROJECT_NAME}_test" test.cpp)
+    target_link_libraries("${PROJECT_NAME}_test" PRIVATE ${PROJECT_NAME} GTest::gtest GTest::gtest_main)
 
-# executables
-add_executable("${PROJECT_NAME}_test" test.cpp)
-add_executable("${PROJECT_NAME}_bench" bench.cpp)
-target_link_libraries("${PROJECT_NAME}_test" PRIVATE ${PROJECT_NAME} GTest::gtest GTest::gtest_main)
-target_link_libraries("${PROJECT_NAME}_bench" PRIVATE ${PROJECT_NAME} benchmark::benchmark)
+    # add google test
+    include(GoogleTest)
+    gtest_discover_tests("${PROJECT_NAME}_test")
+endif()
 
-# add google test
-include(GoogleTest)
-gtest_discover_tests("${PROJECT_NAME}_test")
+if(CPPPROPERTY_BUILD_BENCH)
+    # Google benchmark
+    find_package(benchmark REQUIRED)
+
+    # executables
+    add_executable("${PROJECT_NAME}_bench" bench.cpp)
+    target_link_libraries("${PROJECT_NAME}_bench" PRIVATE ${PROJECT_NAME} benchmark::benchmark)
+endif()
 
 # compile commands
 if(CMAKE_EXPORT_COMPILE_COMMANDS)

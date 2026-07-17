@@ -10,6 +10,7 @@ endif()
 
 # options
 option(CPPPROPERTY_BUILD_TEST "Build ${PROJECT_NAME} tests" ${CPPPROPERTY_IS_TOPLEVEL_PROJECT})
+option(CPPPROPERTY_BUILD_BENCH "Build ${PROJECT_NAME} benchmarks" OFF)
 
 # library
 include(GNUInstallDirs)
@@ -55,7 +56,7 @@ if(CPPPROPERTY_IS_TOPLEVEL_PROJECT)
 endif()
 
 # test and benchmark
-if(CPPPROPERTY_BUILD_TEST OR CPPYYJSON_BUILD_BENCH)
+if(CPPPROPERTY_BUILD_TEST OR CPPPROPERTY_BUILD_BENCH)
     enable_testing()
     add_subdirectory(test)
 endif()
