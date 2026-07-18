@@ -154,6 +154,9 @@ public:
     // auto_property includes backing field
     auto_property<double> num { get, set, 3.14 };
 
+    // auto_property can also wrap an existing backing field by reference
+    auto_property<double&> num_ref { num_ };
+
     // get/set-only auto-implemented property
     auto_property<const double&, get_only> num_get_only { get, num_ };
     auto_property<double&, set_only> num_set_only { set, num_ };
@@ -162,7 +165,7 @@ public:
 
 ## Notes
 
-Properties backed by function accessors use `std::function`. Use `get_auto`, `set_auto`, or `auto_property` when the getter or setter can directly access a backing field and the lowest overhead is important.
+Properties backed by function accessors use lightweight internal callable storage. Use `get_auto`, `set_auto`, or `auto_property` when the getter or setter can directly access a backing field and the lowest overhead is important.
 
 Logical operators are overloaded for transparent access, but overloaded `operator&&` and `operator||` do not preserve the built-in short-circuit evaluation rules.
 
@@ -175,8 +178,7 @@ Logical operators are overloaded for transparent access, but overloaded `operato
 ## Future Issues
 
 *   Property types cannot be deduced in member types and look dirty.
-*   Reduce overhead of `std::function`
-    *   Is `std::move_only_function` in C++23 more efficient?
+*   Further reduce overhead of function-backed properties.
 
 <!---
 ## Reference

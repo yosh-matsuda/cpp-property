@@ -11,8 +11,12 @@
 #pragma once
 #include <cassert>
 #include <concepts>
+#include <cstddef>
 #include <functional>
+#include <new>
 #include <optional>
+#include <type_traits>
+#include <utility>
 
 namespace cpp_property
 {
@@ -51,6 +55,75 @@ namespace cpp_property
             template <typename OuterReturnType, typename InnerReturnType>
             constexpr auto is_dangling_reference =
                 std::is_reference_v<OuterReturnType> && !std::is_reference_v<InnerReturnType>;
+
+            template <typename, std::size_t = 2 * sizeof(void*)>
+            class small_function;
+
+            template <typename R, typename... As, std::size_t StorageSize>
+            class small_function<R(As...), StorageSize>
+            {
+                using Storage = std::aligned_storage_t<StorageSize, alignof(void*)>;
+
+                Storage storage_;
+                void* entity_ = nullptr;
+                R (*invoke_)(void*, As&&...) = nullptr;
+                void (*destroy_)(void*) noexcept = nullptr;
+
+                template <typename Func>
+                static constexpr auto can_store_inline =
+                    sizeof(Func) <= StorageSize && alignof(Func) <= alignof(Storage);
+
+            public:
+                small_function() noexcept {}
+                small_function(const small_function&) = delete;
+                small_function(small_function&&) = delete;
+                small_function& operator=(const small_function&) = delete;
+                small_function& operator=(small_function&&) = delete;
+
+                template <typename Func>
+                requires (!std::same_as<std::remove_cvref_t<Func>, small_function>) &&
+                         std::invocable<std::remove_cvref_t<Func>&, As...> &&
+                         (std::is_void_v<R> ||
+                          std::convertible_to<std::invoke_result_t<std::remove_cvref_t<Func>&, As...>, R>)
+                small_function(Func&& func)
+                {
+                    using Function = std::remove_cvref_t<Func>;
+                    if constexpr (can_store_inline<Function>)
+                    {
+                        entity_ = ::new (static_cast<void*>(&storage_)) Function(std::forward<Func>(func));
+                        destroy_ = [](void* entity) noexcept { static_cast<Function*>(entity)->~Function(); };
+                    }
+                    else
+                    {
+                        entity_ = new Function(std::forward<Func>(func));
+                        destroy_ = [](void* entity) noexcept { delete static_cast<Function*>(entity); };
+                    }
+
+                    invoke_ = [](void* entity, As&&... args) -> R {
+                        if constexpr (std::is_void_v<R>)
+                        {
+                            std::invoke(*static_cast<Function*>(entity), std::forward<As>(args)...);
+                        }
+                        else
+                        {
+                            return std::invoke(*static_cast<Function*>(entity), std::forward<As>(args)...);
+                        }
+                    };
+                }
+
+                ~small_function()
+                {
+                    if (destroy_) destroy_(entity_);
+                }
+
+                explicit operator bool() const noexcept { return invoke_ != nullptr; }
+
+                R operator()(As... args) const
+                {
+                    if (!invoke_) throw std::bad_function_call();
+                    return invoke_(entity_, std::forward<As>(args)...);
+                }
+            };
 
             template <setter_function Func>
             using setter_argument_type = std::tuple_element_t<0, typename function_traits<Func>::argument_types>;
@@ -188,7 +261,7 @@ namespace cpp_property
                 }
 
                 template <typename U>
-                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v* r; }
+                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v * r; }
                 decltype(auto) operator*=(const U& right) const&
                 {
                     return operator=(derived()() * right);
@@ -230,7 +303,7 @@ namespace cpp_property
                     return operator=(derived()() >> right);
                 }
                 template <typename U>
-                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v& r; }
+                requires has_getter && has_setter && requires(ReturnType v, const U& r) { v & r; }
                 decltype(auto) operator&=(const U& right) const&
                 {
                     return operator=(derived()() & right);
@@ -581,7 +654,7 @@ namespace cpp_property
             }
 #pragma endregion operators(property / property)
         }  // namespace detail
-    }      // namespace
+    }  // namespace
 
     struct get_only
     {
@@ -650,9 +723,9 @@ namespace cpp_property
 
         using EntityType = std::remove_cvref_t<ReturnType>;
         using ArgumentType = std::remove_cvref_t<ReturnType>;
-        const std::function<ReturnType()> getter_;        // NOLINT
+        const detail::small_function<ReturnType()> getter_;        // NOLINT
         mutable get_auto<EntityType> auto_getter_;
-        const std::function<void(ArgumentType)> setter_;  // NOLINT
+        const detail::small_function<void(ArgumentType)> setter_;  // NOLINT
         mutable set_auto<EntityType> auto_setter_;
 
     public:
@@ -660,8 +733,8 @@ namespace cpp_property
 
         template <typename Getter, typename Setter>
         requires requires(Getter&& g, Setter&& s) {
-            std::function<ReturnType()>{g};
-            std::function<void(ArgumentType)>{s};
+            detail::small_function<ReturnType()>{g};
+            detail::small_function<void(ArgumentType)>{s};
             requires !(detail::is_dangling_reference<ReturnType, decltype(g())>);
         }
         property(Getter&& get_f, Setter&& set_f)
@@ -677,7 +750,7 @@ namespace cpp_property
 
         template <typename Setter>
         requires is_const_lvalue_reference_v<ReturnType> &&
-                     requires(Setter&& s) { std::function<void(ArgumentType)>{s}; }
+                     requires(Setter&& s) { detail::small_function<void(ArgumentType)>{s}; }
         property(get_auto<EntityType> get_f, Setter&& set_f)
             : auto_getter_(std::move(get_f)), setter_(std::forward<Setter>(set_f))
         {
@@ -685,7 +758,7 @@ namespace cpp_property
 
         template <typename Getter>
         requires requires(Getter&& g) {
-            std::function<ReturnType()>{g};
+            detail::small_function<ReturnType()>{g};
             requires !(detail::is_dangling_reference<ReturnType, decltype(g())>);
         }
         property(Getter&& get_f, set_auto<EntityType> set_f)
@@ -746,9 +819,9 @@ namespace cpp_property
         friend class property;
 
         using EntityType = std::remove_cvref_t<ReturnType>;
-        const std::function<ReturnType()> getter_;        // NOLINT
+        const detail::small_function<ReturnType()> getter_;        // NOLINT
         mutable get_auto<EntityType> auto_getter_;
-        const std::function<void(ArgumentType)> setter_;  // NOLINT
+        const detail::small_function<void(ArgumentType)> setter_;  // NOLINT
         mutable set_auto<EntityType> auto_setter_;
 
     public:
@@ -756,8 +829,8 @@ namespace cpp_property
 
         template <typename Getter, typename Setter>
         requires requires(Getter&& g, Setter&& s) {
-            std::function<ReturnType()>{g};
-            std::function<void(ArgumentType)>{s};
+            detail::small_function<ReturnType()>{g};
+            detail::small_function<void(ArgumentType)>{s};
             requires !(detail::is_dangling_reference<ReturnType, decltype(g())>);
         }
         property(Getter&& get_f, Setter&& set_f)
@@ -773,7 +846,7 @@ namespace cpp_property
 
         template <typename Setter>
         requires is_const_lvalue_reference_v<ReturnType> &&
-                     requires(Setter&& s) { std::function<void(ArgumentType)>{s}; }
+                     requires(Setter&& s) { detail::small_function<void(ArgumentType)>{s}; }
         property(get_auto<EntityType> get_f, Setter&& set_f)
             : auto_getter_(std::move(get_f)), setter_(std::forward<Setter>(set_f))
         {
@@ -781,7 +854,7 @@ namespace cpp_property
 
         template <typename Getter>
         requires requires(Getter&& g) {
-            std::function<ReturnType()>{g};
+            detail::small_function<ReturnType()>{g};
             requires !(detail::is_dangling_reference<ReturnType, decltype(g())>);
         }
         property(Getter&& get_f, set_auto<EntityType> set_f)
@@ -842,7 +915,7 @@ namespace cpp_property
         friend class property;
 
         using EntityType = std::remove_cvref_t<ReturnType>;
-        const std::function<ReturnType()> getter_;  // NOLINT
+        const detail::small_function<ReturnType()> getter_;  // NOLINT
         mutable get_auto<EntityType> auto_getter_;
 
     public:
@@ -850,7 +923,7 @@ namespace cpp_property
 
         template <typename Getter>
         requires requires(Getter&& g) {
-            std::function<ReturnType()>{g};
+            detail::small_function<ReturnType()>{g};
             requires !(detail::is_dangling_reference<ReturnType, decltype(g())>);
         }
         property(Getter&& get_f) : getter_(std::forward<Getter>(get_f))  // NOLINT
@@ -889,14 +962,14 @@ namespace cpp_property
         friend class property;
 
         using EntityType = std::remove_cvref_t<ArgumentType>;
-        const std::function<void(ArgumentType)> setter_;  // NOLINT
+        const detail::small_function<void(ArgumentType)> setter_;  // NOLINT
         mutable set_auto<EntityType> auto_setter_;
 
     public:
         property() = delete;
 
         template <typename Setter>
-        requires requires(Setter&& s) { std::function<void(ArgumentType)>{s}; }
+        requires requires(Setter&& s) { detail::small_function<void(ArgumentType)>{s}; }
         property(Setter&& set_f) : setter_(std::forward<Setter>(set_f))  // NOLINT
         {
         }
@@ -1160,12 +1233,12 @@ namespace cpp_property
 #define import_cpp_property()                                                                                  \
     using cpp_property::property, cpp_property::auto_property, cpp_property::get_only, cpp_property::set_only, \
         cpp_property::get_auto, cpp_property::set_auto, cpp_property::get, cpp_property::set
-#define get_val [this]() -> auto
-#define get_cref [this]() -> const auto&
-#define get_ref [this]() -> auto&
-#define set_val [this](auto value) -> void
-#define set_cref [this](const auto& value) -> void
-#define set_ref [this](auto& value) -> void
+#define get_val [this]()->auto
+#define get_cref [this]()->const auto&
+#define get_ref [this]()->auto&
+#define set_val [this](auto value)->void
+#define set_cref [this](const auto& value)->void
+#define set_ref [this](auto& value)->void
 #else
 #define import_cpp_property()                                                                                  \
     using cpp_property::property, cpp_property::auto_property, cpp_property::get_only, cpp_property::set_only, \
