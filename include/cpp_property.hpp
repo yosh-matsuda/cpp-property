@@ -1008,8 +1008,7 @@ namespace cpp_property
             return Base::operator=(prop());
         };
         template <detail::not_base_of_property U>
-        requires requires(EntityType& e, U&& v) { e = std::forward<U>(v); } &&
-                 (!std::is_reference_v<EntityType> || !std::is_rvalue_reference_v<U &&>)
+        requires requires(EntityType& e, U&& v) { e = std::forward<U>(v); }
         decltype(auto) operator=(U&& value)
         {
             return Base::operator=(std::forward<U>(value));

@@ -70,6 +70,7 @@ TEST(CppProperty, Constructor)
 
     static_assert(std::is_constructible_v<auto_property<double>, decltype(get), decltype(set)>);
     auto_property<double> auto_prop_v = {get, set, 10.0};
+    auto_property<double&> auto_prop_r {num1};
     static_assert(std::is_constructible_v<auto_property<double, get_only>, decltype(get)>);
     auto_property<const double&, get_only> auto_prop_v_g = {get, num1};
     auto_property<double&, set_only> auto_prop_v_s = {set, num1};
@@ -81,6 +82,10 @@ TEST(CppProperty, Constructor)
     static_assert(std::same_as<decltype(auto_prop_v), decltype(auto_prop_v_ded)>);
     static_assert(std::same_as<decltype(auto_prop_v_g), decltype(auto_prop_v_g_ded)>);
     static_assert(std::same_as<decltype(auto_prop_v_s), decltype(auto_prop_v_s_ded)>);
+    static_assert(std::is_assignable_v<decltype(auto_prop_r), double>);
+
+    auto_prop_r = 2.0;
+    EXPECT_EQ(2.0, num1);
 }
 // clang-format on
 
