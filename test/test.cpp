@@ -176,6 +176,11 @@ TEST(CppProperty, Operators)
     EXPECT_EQ(obj.num, p_objp->num);
     EXPECT_EQ(obj.num, p_opt->num);
 
+    // has_value
+    EXPECT_TRUE(p_opt.has_value());
+    p_opt = decltype(opt)();
+    EXPECT_FALSE(p_opt.has_value());
+
     EXPECT_EQ(real + VALUE, p_real + VALUE);
     EXPECT_EQ(VALUE + real, VALUE + p_real);
     EXPECT_EQ(real - VALUE, p_real - VALUE);

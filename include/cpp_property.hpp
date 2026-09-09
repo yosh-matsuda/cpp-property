@@ -190,6 +190,13 @@ namespace cpp_property
                     return *derived().get();
                 }
 
+                // has_value
+                [[nodiscard]] decltype(auto) has_value() const
+                requires has_getter && requires(ReturnType v) { v.has_value(); }
+                {
+                    return derived().get().has_value();
+                }
+
                 // equal operator (default)
                 template <typename U>
                 requires has_setter
