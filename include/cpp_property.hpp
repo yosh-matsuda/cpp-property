@@ -1,12 +1,12 @@
-/*===================================================*
-|  cpp-property version v0.0.1                       |
-|  https://github.com/yosh-matsuda/cpp-property      |
-|                                                    |
-|  Copyright (c) 2023 Yoshiki Matsuda @yosh-matsuda  |
-|                                                    |
-|  This software is released under the MIT License.  |
-|  https://opensource.org/license/mit/               |
-====================================================*/
+/*========================================================*
+|  cpp-property version v0.0.1                            |
+|  https://github.com/yosh-matsuda/cpp-property           |
+|                                                         |
+|  Copyright (c) 2023-2026 Yoshiki Matsuda @yosh-matsuda  |
+|                                                         |
+|  This software is released under the MIT License.       |
+|  https://opensource.org/license/mit/                    |
+=========================================================*/
 
 #pragma once
 #include <cassert>
